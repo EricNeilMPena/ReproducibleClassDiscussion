@@ -1,0 +1,112 @@
+---
+title: "The Door-to-Door Caravan Sampling Problem"
+author: "Alejandro, Dizon, Kuo, Matias, Pena"
+date: "May 10, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction  
+
+Globe is considering to hire a marketing agency to do a door-to-door sampling caravan project to give
+out free prepaid SIM cards to households. The objective is to increase the subscriber base of the company while
+obtaining a net profit from this project by hoping that the free SIM card samples will eventually be activated in
+the future and revenue will flow from the activated SIMs.   
+  
+### Sampling Strategy  
+The marketing agency proposes to do the following sampling system:  
+  
+* Ten samplers will be deployed per day to a specific barangay. These samplers are paid minimum
+wage by the marketing agency. A limit of one barangay per day is to be visited by the team due
+to capacity and planning restrictions.
+* A work day is 8 hours from 8am to 5pm. From TGT, the ten samplers will be assembled and at
+8am will leave BGC to travel to the selected barangay for that day as a Globe Door-to-Door
+Caravan. They have to be back by 5pm at TGT. Lunch break is from 12-1pm.  
+* When at the Barangay for the day, the ten samplers will start walking around the Barangay
+knocking on houses. Assume that the ten samplers go to different households in different streets
+within a Barangay within a day.  
+* When a sampler calls on a house and it is answered, the standard spiel to be said is: "Good
+morning(afternoon) po, andito po ako ngayon para magbigay ng libreng prepaid SIM from
+Globe. May libre po siyang PhP 50.00 load for call, text at saka data. Interested po ba sila?" If
+the one that answered the door is interested, the sampler hands a free SIM card. Additionally,
+the sampler asks for a signature indicating the SIM has been given away. Maximum of one SIM
+card per house.  
+* The interaction with a house is composed of 3 parts: 1) Waiting to Answer the Door which
+usually takes on average 20 seconds, 2) Spiel Talk Time and 3) Signing time which takes around
+10 seconds.  
+* If not interested or there is no answer after 30 seconds, then the sampler will move to the next
+household. Assume that the Sampler walks on average 4 km/hr. Only 10% of the houses don't
+answer.  
+* If the sampler was able to provide a SIM to the household, that is considered as a hit. Usually
+the success rate of the Samplers claimed by the Marketing Agency is 75%. Which means that
+7.5 out of 10 households that answered the door, have accepted the free SIM.  
+* Only 25% of the SIMs given away are activated after the sampling and on average will provide
+a revenue return of PhP 200.00 per year. The 25% value is called conversion rate, and is
+estimated by the Marketing Agency.  
+* During the entire sampling project, assume that the Caravan has enough SIMs for the day for
+all 10 samplers.  
+* A SIM card costs PhP 40.00 to manufacture which includes the initial cost of the PhP 50 credit
+load.   
+* The agency is proposing a PhP 5,000,000 contract with Globe to do the 100 days of sampling
+which includes the salaries of the ten samplers, as well as the company's van and a driver.
+(Globe's estimates that the agency spends 10,000 per day for the van's utilization which
+includes gas, van rental and driver salary). Note further that the PhP 5,000,000 contract does
+not include the costs of the SIM cards.
+
+### Algo and code shiz
+
+Blah blah blah 
+
+#### Loading and preprocessing the data  
+Additional R packages are required to properly process the data. These packages contain functions that aren't included in the standard R set of packages.
+
+```{r, eval = FALSE, results='hide', message=FALSE, warning=FALSE}
+chooseCRANmirror(graphics=FALSE, ind=1)
+
+install.packages("geosphere")
+install.packages("dplyr")
+
+```
+
+#### Load the Required Libraries  
+It is necessary to load the previously installed R packages. Once called, the functions contained in these packages will now be useful.   
+
+```{r eval = FALSE}
+library(dplyr)
+library(geosphere)
+```
+
+### Set Working Directory
+
+```{r }
+setwd("C:/Users/10012191/Desktop/Reproducible class/ReproducibleClassDiscussion")
+```
+
+### Download dataset
+Download the dataset that will be utilized in this research. Subsequently, read the downloaded dataset in R. 
+
+```{r }
+download.file (url = 'https://drive.google.com/file/d/1F23lt9W0cOF7j-iU5nWp1YhuH7bxIcx0/', destfile="h2h.zip")
+```
+
+### Extract the dataset  
+```{r }
+unzip(zipfile = "./h2h.zip")
+```
+
+
+### Load the dataset
+```{r }
+dataset = read.csv("h2h.csv",skip=1)
+```
+
+
+
+
+
+
+
+
