@@ -63,47 +63,333 @@ Blah blah blah
 #### Loading and preprocessing the data  
 Additional R packages are required to properly process the data. These packages contain functions that aren't included in the standard R set of packages.
 
-```{r, eval = FALSE, results='hide', message=FALSE, warning=FALSE}
+```{r, results='hide', message=FALSE, warning=FALSE}
 chooseCRANmirror(graphics=FALSE, ind=1)
 
 install.packages("geosphere")
 install.packages("dplyr")
+install.packages("ggplot2")
 
 ```
 
 #### Load the Required Libraries  
 It is necessary to load the previously installed R packages. Once called, the functions contained in these packages will now be useful.   
 
-```{r eval = FALSE}
+```{r }
 library(dplyr)
 library(geosphere)
+library(ggplot2)
+
 ```
 
-### Set Working Directory
+#### Set Working Directory
 
 ```{r }
 setwd("C:/Users/10012191/Desktop/Reproducible class/ReproducibleClassDiscussion")
 ```
 
-### Download dataset
+#### Download dataset
 Download the dataset that will be utilized in this research. Subsequently, read the downloaded dataset in R. 
 
 ```{r }
-download.file (url = 'https://drive.google.com/file/d/1F23lt9W0cOF7j-iU5nWp1YhuH7bxIcx0/', destfile="h2h.zip")
+download.file (url = 'https://github.com/GlennMatias/ReproducibleClassDiscussion/raw/master/h2h.zip', destfile="h2h.zip")
 ```
 
-### Extract the dataset  
+#### Extract the dataset  
 ```{r }
 unzip(zipfile = "./h2h.zip")
 ```
 
 
-### Load the dataset
+#### Load the dataset
 ```{r }
 dataset = read.csv("h2h.csv",skip=1)
 ```
 
 
+
+
+
+
+### Processing / Transforming the data  
+
+blah blah blah 
+
+#### Setting the dataset's column headers
+
+```{r }
+colnames(dataset) = c("Island","Major_Island","Region","Province","ProvinceCity","CityMunicipcality","Barangay","TotalPopulation","NHouseholds","AreaBarangay","lat","long","Size")
+```
+
+#### Subset and get only the NCR Data
+
+```{r }
+NCRDataset = subset(dataset,dataset$Region=="NATIONAL CAPITAL REGION") 
+```
+
+#### Concatenate City and Brgy into one column
+```{r }
+NCRDataset$CityBrgy<-paste(NCRDataset$CityMunicipcality,NCRDataset$Barangay,sep="-")
+```
+
+#### Assignment of parameters with variables based on given figures by the marketing agency
+
+```{r }
+ans <- 0.9			#Answer rate
+conv <- 0.25			#Conversion rate
+acc <- 0.75			#Acceptance rate
+day <- 100			#Number of sampling days
+sampler <- 10			#Number of samplers
+sim <- 40			#Cost manufacturing 1 sim card
+rev <- 200			#Yearly revenue per user
+initialCost <- 5000000 	#Initial investment
+
+```
+
+#### Assignment of parameters with variables based on assumptions  
+
+```{r }
+projYears <- 5			#Length of financial projection
+speedVan <- 33	#Average speed of cars in Metro Manila
+spielTotal <- 60        #Average length of time spent per household (if they answer)
+spielTotal2 <- 40      #Average length of time spent per household (if no answer)
+
+```
+
+#### Calculate the remaining work hours after/before travel  
+
+Initialize column to contain distance
+```{r }
+NCRDataset$distanceFromTGT = 0
+```
+
+Compute distance from starting point (TGT) to barangay (in meters) and travel time (in hours) 
+```{r }
+for(i in 1:nrow(NCRDataset)){
+      			NCRDataset[i,16] = distm(c(NCRDataset[i, 12], NCRDataset[i,11]), 
+c(121.0499,  14.5535), fun = distHaversine) / 1000 
+}
+NCRDataset$travelTime = ((NCRDataset$distanceFromTGT/33)) # Constant speed of 33 kph
+```
+
+Calculate remaining hours by deducting travel time  
+```{r }
+NCRDataset$availableWorkhoursAfterVanTravel = 8 - (NCRDataset$travelTime * 2)
+
+```
+
+#### Compute for the maximum possible households that the samplers can reach per barangay  
+
+Mutate a column for the maximum possible households  
+```{r }
+NCRDataset$maxpossible<-(sampler*(NCRDataset$availableWorkhoursAfterVanTravel*3600))/((spielTotal*ans)+(spielTotal2*(1-ans)))
+```
+
+Subset the households which have more households than the maximum possible
+  
+```{r }
+NCRDataset<-subset(NCRDataset,NCRDataset$NHouseholds>=NCRDataset$maxpossible)
+```
+
+
+
+### Data Analysis - Market Feasibility  
+
+blah blah
+
+### Get the top 100 barangays to be visited to maximize the total hits by arranging the barangays with respect to the maximum number of households
+ 
+```{r }
+chosenBrgy<-head(arrange(NCRDataset,desc(NCRDataset$maxpossible)),day)
+```
+
+### Given the top 100 barangays, compute for the number of hits that can be realistically obtained for 100 days of sampling 
+
+Calculate the total number of hits  
+```{r }
+chosenBrgy$hits<-ans*chosenBrgy$maxpossible*acc
+
+```
+
+Calculate the total number of hits by City
+```{r }
+HitsbyCity <- chosenBrgy %>% group_by(ProvinceCity) %>% summarise(TotalHits = sum(hits))
+```
+
+Calculate the total number of hits by region
+
+```{r }
+HitsbyRegion <- chosenBrgy %>% group_by(Region) %>% summarise(TotalHits = sum(hits))
+```
+
+Calculate the total number of hits per barangay size
+
+```{r }
+HitsbyBarangay <- chosenBrgy %>% group_by(Size) %>% summarise(TotalHits = sum(hits))
+```
+
+
+Create a mapping plot for the top 100 barangays to visualize  
+  
+FIGURE HERE
+  
+Make a shape plot for the number of barangays per city to visualize  
+  
+FIGURE HERE  
+
+Create a line graph for the total number of hits per samplers to visualize  
+  
+FIGURE HERE
+
+#### Check if reaching out to nearby provinces would increase the number of hits  
+  
+By changing the subset condition and limiting the Major_Island parameter into "GMA" instead of limiting the Region parameter to "NCR", we can identify other potential barangays in the Greater Manila Area to visit.
+
+```{r}
+
+GMADataset<-subset(dataset,dataset$Major_Island=="GMA")
+
+GMADataset$distanceFromTGT = 0
+for(i in 1:nrow(GMADataset)){
+      GMADataset[i,16] = distm(c(GMADataset[i, 12], GMADataset[i,11]), c(121.0499,  14.5535), fun = distHaversine) / 1000
+}
+GMADataset$travelTime = ((GMADataset$distanceFromTGT/33))
+GMADataset$availableWorkhoursAfterVanTravel = 8 - (GMADataset$travelTime * 2)
+GMADataset$CityBrgy<-paste(GMADataset$CityMunicipcality,GMADataset$Barangay,sep="-")
+GMADataset$maxpossible<-(10*(GMADataset$availableWorkhoursAfterVanTravel*3600))/((60*0.9)+(40*0.1))
+GMADataset<-subset(GMADataset,GMADataset$NHouseholds>=GMADataset$maxpossible)
+chosenBrgyProv<-head(arrange(GMADataset,desc(GMADataset$maxpossible)),100)
+chosenBrgyProv$hits<-0.9*chosenBrgyProv$maxpossible*0.75
+HitsbyCityProv <- chosenBrgyProv %>% group_by(ProvinceCity) %>% summarise(TotalHits = sum(hits))
+HitsbyRegionProv <- chosenBrgyProv %>% group_by(Region) %>% summarise(TotalHits = sum(hits))
+HitsbyBarangayProv <- chosenBrgyProv %>% group_by(Size) %>% summarise(TotalHits = sum(hits))
+TotalHitsProv<-sum(chosenBrgyProv$hits)
+```
+
+The percent difference in the total hits is calculated for between the Greater Manila Area and only the National Capital Region
+
+```{r eval = FALSE}
+Difference<-100*(TotalHitsProv-TotalHits)/TotalHitsProv
+```
+
+Create a mapping plot of the top 100 barangays with the provinces to visualize
+
+
+FIGURE HERE  
+
+Create a mapping plot for the comparison of hits between Rizal and Metro Manila
+
+FIGURE HERE  
+
+Create a mapping plot for the comparison of hits between Rizal and Metro Manila  
+  
+FIGURE HERE
+
+### Data Analysis - Technical Feasibility
+
+#### Get the utilization of samplers
+
+Transform the data needed for interacting time, walking time and travelling time
+
+
+```{r eval = FALSE}
+Case3<-as.data.frame(chosenBrgy$CityBrgy)
+colnames(Case3)<-"CityBrgy"
+Case3$travelTime<-chosenBrgy$travelTime*2*60
+Case3$maxpossible<-chosenBrgy$maxpossible
+Case3$hits<-chosenBrgy$hits
+Case3$InteractingTime<-Case3$maxpossible*ans*50/60
+Case3$WalkingTime<-Case3$maxpossible*sampler/60
+
+```
+
+Create a mapping plot for the Interacting time breakdown of the samplers per hour to visualize  
+  
+  
+FIGURE HERE
+
+#### Increasing the number of samplers
+
+
+```{r eval = FALSE}
+comparisonSamplers<-as.data.frame(1:7)
+colnames(comparisonSamplers)<-"NSamplers"
+comparisonSamplers[,1]<-10:16
+comparisonSamplers$Hits<-0
+comparisonSamplers$Wages<-comparisonSamplers$NSamplers*537*day
+
+for (i in 10:16){ NCRDataset$maxpossible<-(i*(NCRDataset$availableWorkhoursAfterVanTravel*3600))/((spielTotal*ans)+(spielTotal2*(1-ans)))
+      NCRDataset<-subset(NCRDataset,NCRDataset$NHouseholds>=NCRDataset$maxpossible)
+      chosenBrgy<-head(arrange(NCRDataset,desc(NCRDataset$maxpossible)),day)
+      chosenBrgy$hits<-ans*chosenBrgy$maxpossible*acc
+      TotalHits<-sum(chosenBrgy$hits)
+      comparisonSamplers[i-9,2]<-TotalHits
+}
+
+g<-ggplot(comparisonSamplers,aes(NSamplers,Hits))
+g+geom_col()+ggtitle("Hits With Varying Number of Samplers")
+
+```
+
+### Data Analysis - Financial Feasibility
+
+#### Project the Return on Investment (ROI) and Payback Period for 5 years  
+  
+  
+Get the total number of conversions
+
+```{r eval = FALSE}
+chosenBrgy$conversion <- chosenBrgy$hits*conv
+TotalConversion <- sum(chosenBrgy$conversion)
+```
+
+Compute for the total manufacturing cost of sim cards 
+```{r eval = FALSE}
+totalSimcost <- Hits*sim
+```
+
+
+Calculate the total revenue per year 
+
+```{r eval = FALSE}
+totalRevenuePerYear <- TotalConversion*rev
+
+```
+
+Get the total investment based on initial investment and sim card manufacturing cost
+
+```{r eval = FALSE}
+totalInvestment <- initialCost+totalSimcost
+
+```
+
+Compute for the cumulative profit
+
+```{r eval = FALSE}
+cumulativeNIBT <- totalRevenuePerYear*projYears
+```
+
+Make a line graph for the cumulative investment and cumulative Profit  
+    
+FIGURE HERE  
+  
+Calculate Return on Investment (ROI)
+
+```{r eval = FALSE}
+ROI <- ((cumulativeNIBT-totalInvestment)/totalInvestment)*100
+```
+
+Get the Payback Period
+
+
+```{r eval = FALSE}
+PaybackPeriod <- totalInvestment/totalRevenuePerYear
+
+```
+
+#### Check for the sensitivity of the acceptance and conversion rate to the financial feasibility
+
+Vary the acceptance and conversion rate (by +/- 50%) simultaneously and compute the ROI and Payback Period (The values used in the simulation are summarized below)
 
 
 

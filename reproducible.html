@@ -235,18 +235,214 @@ $(document).ready(function () {
 <pre class="r"><code>chooseCRANmirror(graphics=FALSE, ind=1)
 
 install.packages(&quot;geosphere&quot;)
-install.packages(&quot;dplyr&quot;)</code></pre>
+install.packages(&quot;dplyr&quot;)
+install.packages(&quot;ggplot2&quot;)</code></pre>
 </div>
 <div id="load-the-required-libraries" class="section level4">
 <h4>Load the Required Libraries</h4>
 <p>It is necessary to load the previously installed R packages. Once called, the functions contained in these packages will now be useful.</p>
-<pre class="r"><code>library(dplyr)
-library(geosphere)</code></pre>
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## Warning: package 'dplyr' was built under R version 3.5.3</code></pre>
+<pre><code>## 
+## Attaching package: 'dplyr'</code></pre>
+<pre><code>## The following objects are masked from 'package:stats':
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>library(geosphere)</code></pre>
+<pre><code>## Warning: package 'geosphere' was built under R version 3.5.3</code></pre>
+<pre class="r"><code>library(ggplot2)</code></pre>
+<pre><code>## Warning: package 'ggplot2' was built under R version 3.5.3</code></pre>
 </div>
-</div>
-<div id="set-working-directory" class="section level3">
-<h3>Set Working Directory</h3>
+<div id="set-working-directory" class="section level4">
+<h4>Set Working Directory</h4>
 <pre class="r"><code>setwd(&quot;C:/Users/10012191/Desktop/Reproducible class/ReproducibleClassDiscussion&quot;)</code></pre>
+</div>
+<div id="download-dataset" class="section level4">
+<h4>Download dataset</h4>
+<p>Download the dataset that will be utilized in this research. Subsequently, read the downloaded dataset in R.</p>
+<pre class="r"><code>download.file (url = 'https://github.com/GlennMatias/ReproducibleClassDiscussion/raw/master/h2h.zip', destfile=&quot;h2h.zip&quot;)</code></pre>
+</div>
+<div id="extract-the-dataset" class="section level4">
+<h4>Extract the dataset</h4>
+<pre class="r"><code>unzip(zipfile = &quot;./h2h.zip&quot;)</code></pre>
+</div>
+<div id="load-the-dataset" class="section level4">
+<h4>Load the dataset</h4>
+<pre class="r"><code>dataset = read.csv(&quot;h2h.csv&quot;,skip=1)</code></pre>
+</div>
+</div>
+<div id="processing-transforming-the-data" class="section level3">
+<h3>Processing / Transforming the data</h3>
+<p>blah blah blah</p>
+<div id="setting-the-datasets-column-headers" class="section level4">
+<h4>Setting the dataset’s column headers</h4>
+<pre class="r"><code>colnames(dataset) = c(&quot;Island&quot;,&quot;Major_Island&quot;,&quot;Region&quot;,&quot;Province&quot;,&quot;ProvinceCity&quot;,&quot;CityMunicipcality&quot;,&quot;Barangay&quot;,&quot;TotalPopulation&quot;,&quot;NHouseholds&quot;,&quot;AreaBarangay&quot;,&quot;lat&quot;,&quot;long&quot;,&quot;Size&quot;)</code></pre>
+</div>
+<div id="subset-and-get-only-the-ncr-data" class="section level4">
+<h4>Subset and get only the NCR Data</h4>
+<pre class="r"><code>NCRDataset = subset(dataset,dataset$Region==&quot;NATIONAL CAPITAL REGION&quot;) </code></pre>
+</div>
+<div id="concatenate-city-and-brgy-into-one-column" class="section level4">
+<h4>Concatenate City and Brgy into one column</h4>
+<pre class="r"><code>NCRDataset$CityBrgy&lt;-paste(NCRDataset$CityMunicipcality,NCRDataset$Barangay,sep=&quot;-&quot;)</code></pre>
+</div>
+<div id="assignment-of-parameters-with-variables-based-on-given-figures-by-the-marketing-agency" class="section level4">
+<h4>Assignment of parameters with variables based on given figures by the marketing agency</h4>
+<pre class="r"><code>ans &lt;- 0.9          #Answer rate
+conv &lt;- 0.25            #Conversion rate
+acc &lt;- 0.75         #Acceptance rate
+day &lt;- 100          #Number of sampling days
+sampler &lt;- 10           #Number of samplers
+sim &lt;- 40           #Cost manufacturing 1 sim card
+rev &lt;- 200          #Yearly revenue per user
+initialCost &lt;- 5000000  #Initial investment</code></pre>
+</div>
+<div id="assignment-of-parameters-with-variables-based-on-assumptions" class="section level4">
+<h4>Assignment of parameters with variables based on assumptions</h4>
+<pre class="r"><code>projYears &lt;- 5          #Length of financial projection
+speedVan &lt;- 33  #Average speed of cars in Metro Manila
+spielTotal &lt;- 60        #Average length of time spent per household (if they answer)
+spielTotal2 &lt;- 40      #Average length of time spent per household (if no answer)</code></pre>
+</div>
+<div id="calculate-the-remaining-work-hours-afterbefore-travel" class="section level4">
+<h4>Calculate the remaining work hours after/before travel</h4>
+<p>Initialize column to contain distance</p>
+<pre class="r"><code>NCRDataset$distanceFromTGT = 0</code></pre>
+<p>Compute distance from starting point (TGT) to barangay (in meters) and travel time (in hours)</p>
+<pre class="r"><code>for(i in 1:nrow(NCRDataset)){
+                NCRDataset[i,16] = distm(c(NCRDataset[i, 12], NCRDataset[i,11]), 
+c(121.0499,  14.5535), fun = distHaversine) / 1000 
+}
+NCRDataset$travelTime = ((NCRDataset$distanceFromTGT/33)) # Constant speed of 33 kph</code></pre>
+<p>Calculate remaining hours by deducting travel time</p>
+<pre class="r"><code>NCRDataset$availableWorkhoursAfterVanTravel = 8 - (NCRDataset$travelTime * 2)</code></pre>
+</div>
+<div id="compute-for-the-maximum-possible-households-that-the-samplers-can-reach-per-barangay" class="section level4">
+<h4>Compute for the maximum possible households that the samplers can reach per barangay</h4>
+<p>Mutate a column for the maximum possible households</p>
+<pre class="r"><code>NCRDataset$maxpossible&lt;-(sampler*(NCRDataset$availableWorkhoursAfterVanTravel*3600))/((spielTotal*ans)+(spielTotal2*(1-ans)))</code></pre>
+<p>Subset the households which have more households than the maximum possible</p>
+<pre class="r"><code>NCRDataset&lt;-subset(NCRDataset,NCRDataset$NHouseholds&gt;=NCRDataset$maxpossible)</code></pre>
+</div>
+</div>
+<div id="data-analysis---market-feasibility" class="section level3">
+<h3>Data Analysis - Market Feasibility</h3>
+<p>blah blah</p>
+</div>
+<div id="get-the-top-100-barangays-to-be-visited-to-maximize-the-total-hits-by-arranging-the-barangays-with-respect-to-the-maximum-number-of-households" class="section level3">
+<h3>Get the top 100 barangays to be visited to maximize the total hits by arranging the barangays with respect to the maximum number of households</h3>
+<pre class="r"><code>chosenBrgy&lt;-head(arrange(NCRDataset,desc(NCRDataset$maxpossible)),day)</code></pre>
+</div>
+<div id="given-the-top-100-barangays-compute-for-the-number-of-hits-that-can-be-realistically-obtained-for-100-days-of-sampling" class="section level3">
+<h3>Given the top 100 barangays, compute for the number of hits that can be realistically obtained for 100 days of sampling</h3>
+<p>Calculate the total number of hits</p>
+<pre class="r"><code>chosenBrgy$hits&lt;-ans*chosenBrgy$maxpossible*acc</code></pre>
+<p>Calculate the total number of hits by City</p>
+<pre class="r"><code>HitsbyCity &lt;- chosenBrgy %&gt;% group_by(ProvinceCity) %&gt;% summarise(TotalHits = sum(hits))</code></pre>
+<p>Calculate the total number of hits by region</p>
+<pre class="r"><code>HitsbyRegion &lt;- chosenBrgy %&gt;% group_by(Region) %&gt;% summarise(TotalHits = sum(hits))</code></pre>
+<p>Calculate the total number of hits per barangay size</p>
+<pre class="r"><code>HitsbyBarangay &lt;- chosenBrgy %&gt;% group_by(Size) %&gt;% summarise(TotalHits = sum(hits))</code></pre>
+<p>Create a mapping plot for the top 100 barangays to visualize</p>
+<p>FIGURE HERE</p>
+<p>Make a shape plot for the number of barangays per city to visualize</p>
+<p>FIGURE HERE</p>
+<p>Create a line graph for the total number of hits per samplers to visualize</p>
+<p>FIGURE HERE</p>
+<div id="check-if-reaching-out-to-nearby-provinces-would-increase-the-number-of-hits" class="section level4">
+<h4>Check if reaching out to nearby provinces would increase the number of hits</h4>
+<p>By changing the subset condition and limiting the Major_Island parameter into “GMA” instead of limiting the Region parameter to “NCR”, we can identify other potential barangays in the Greater Manila Area to visit.</p>
+<pre class="r"><code>GMADataset&lt;-subset(dataset,dataset$Major_Island==&quot;GMA&quot;)
+
+GMADataset$distanceFromTGT = 0
+for(i in 1:nrow(GMADataset)){
+      GMADataset[i,16] = distm(c(GMADataset[i, 12], GMADataset[i,11]), c(121.0499,  14.5535), fun = distHaversine) / 1000
+}
+GMADataset$travelTime = ((GMADataset$distanceFromTGT/33))
+GMADataset$availableWorkhoursAfterVanTravel = 8 - (GMADataset$travelTime * 2)
+GMADataset$CityBrgy&lt;-paste(GMADataset$CityMunicipcality,GMADataset$Barangay,sep=&quot;-&quot;)
+GMADataset$maxpossible&lt;-(10*(GMADataset$availableWorkhoursAfterVanTravel*3600))/((60*0.9)+(40*0.1))
+GMADataset&lt;-subset(GMADataset,GMADataset$NHouseholds&gt;=GMADataset$maxpossible)
+chosenBrgyProv&lt;-head(arrange(GMADataset,desc(GMADataset$maxpossible)),100)
+chosenBrgyProv$hits&lt;-0.9*chosenBrgyProv$maxpossible*0.75
+HitsbyCityProv &lt;- chosenBrgyProv %&gt;% group_by(ProvinceCity) %&gt;% summarise(TotalHits = sum(hits))
+HitsbyRegionProv &lt;- chosenBrgyProv %&gt;% group_by(Region) %&gt;% summarise(TotalHits = sum(hits))
+HitsbyBarangayProv &lt;- chosenBrgyProv %&gt;% group_by(Size) %&gt;% summarise(TotalHits = sum(hits))
+TotalHitsProv&lt;-sum(chosenBrgyProv$hits)</code></pre>
+<p>The percent difference in the total hits is calculated for between the Greater Manila Area and only the National Capital Region</p>
+<pre class="r"><code>Difference&lt;-100*(TotalHitsProv-TotalHits)/TotalHitsProv</code></pre>
+<p>Create a mapping plot of the top 100 barangays with the provinces to visualize</p>
+<p>FIGURE HERE</p>
+<p>Create a mapping plot for the comparison of hits between Rizal and Metro Manila</p>
+<p>FIGURE HERE</p>
+<p>Create a mapping plot for the comparison of hits between Rizal and Metro Manila</p>
+<p>FIGURE HERE</p>
+</div>
+</div>
+<div id="data-analysis---technical-feasibility" class="section level3">
+<h3>Data Analysis - Technical Feasibility</h3>
+<div id="get-the-utilization-of-samplers" class="section level4">
+<h4>Get the utilization of samplers</h4>
+<p>Transform the data needed for interacting time, walking time and travelling time</p>
+<pre class="r"><code>Case3&lt;-as.data.frame(chosenBrgy$CityBrgy)
+colnames(Case3)&lt;-&quot;CityBrgy&quot;
+Case3$travelTime&lt;-chosenBrgy$travelTime*2*60
+Case3$maxpossible&lt;-chosenBrgy$maxpossible
+Case3$hits&lt;-chosenBrgy$hits
+Case3$InteractingTime&lt;-Case3$maxpossible*ans*50/60
+Case3$WalkingTime&lt;-Case3$maxpossible*sampler/60</code></pre>
+<p>Create a mapping plot for the Interacting time breakdown of the samplers per hour to visualize</p>
+<p>FIGURE HERE</p>
+</div>
+<div id="increasing-the-number-of-samplers" class="section level4">
+<h4>Increasing the number of samplers</h4>
+<pre class="r"><code>comparisonSamplers&lt;-as.data.frame(1:7)
+colnames(comparisonSamplers)&lt;-&quot;NSamplers&quot;
+comparisonSamplers[,1]&lt;-10:16
+comparisonSamplers$Hits&lt;-0
+comparisonSamplers$Wages&lt;-comparisonSamplers$NSamplers*537*day
+
+for (i in 10:16){ NCRDataset$maxpossible&lt;-(i*(NCRDataset$availableWorkhoursAfterVanTravel*3600))/((spielTotal*ans)+(spielTotal2*(1-ans)))
+      NCRDataset&lt;-subset(NCRDataset,NCRDataset$NHouseholds&gt;=NCRDataset$maxpossible)
+      chosenBrgy&lt;-head(arrange(NCRDataset,desc(NCRDataset$maxpossible)),day)
+      chosenBrgy$hits&lt;-ans*chosenBrgy$maxpossible*acc
+      TotalHits&lt;-sum(chosenBrgy$hits)
+      comparisonSamplers[i-9,2]&lt;-TotalHits
+}
+
+g&lt;-ggplot(comparisonSamplers,aes(NSamplers,Hits))
+g+geom_col()+ggtitle(&quot;Hits With Varying Number of Samplers&quot;)</code></pre>
+</div>
+</div>
+<div id="data-analysis---financial-feasibility" class="section level3">
+<h3>Data Analysis - Financial Feasibility</h3>
+<div id="project-the-return-on-investment-roi-and-payback-period-for-5-years" class="section level4">
+<h4>Project the Return on Investment (ROI) and Payback Period for 5 years</h4>
+<p>Get the total number of conversions</p>
+<pre class="r"><code>chosenBrgy$conversion &lt;- chosenBrgy$hits*conv
+TotalConversion &lt;- sum(chosenBrgy$conversion)</code></pre>
+<p>Compute for the total manufacturing cost of sim cards</p>
+<pre class="r"><code>totalSimcost &lt;- Hits*sim</code></pre>
+<p>Calculate the total revenue per year</p>
+<pre class="r"><code>totalRevenuePerYear &lt;- TotalConversion*rev</code></pre>
+<p>Get the total investment based on initial investment and sim card manufacturing cost</p>
+<pre class="r"><code>totalInvestment &lt;- initialCost+totalSimcost</code></pre>
+<p>Compute for the cumulative profit</p>
+<pre class="r"><code>cumulativeNIBT &lt;- totalRevenuePerYear*projYears</code></pre>
+<p>Make a line graph for the cumulative investment and cumulative Profit</p>
+<p>FIGURE HERE</p>
+<p>Calculate Return on Investment (ROI)</p>
+<pre class="r"><code>ROI &lt;- ((cumulativeNIBT-totalInvestment)/totalInvestment)*100</code></pre>
+<p>Get the Payback Period</p>
+<pre class="r"><code>PaybackPeriod &lt;- totalInvestment/totalRevenuePerYear</code></pre>
+</div>
+<div id="check-for-the-sensitivity-of-the-acceptance-and-conversion-rate-to-the-financial-feasibility" class="section level4">
+<h4>Check for the sensitivity of the acceptance and conversion rate to the financial feasibility</h4>
+<p>Vary the acceptance and conversion rate (by +/- 50%) simultaneously and compute the ROI and Payback Period (The values used in the simulation are summarized below)</p>
+</div>
 </div>
 </div>
 
