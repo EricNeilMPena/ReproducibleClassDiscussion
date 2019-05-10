@@ -56,10 +56,15 @@ which includes the salaries of the ten samplers, as well as the company's van an
 includes gas, van rental and driver salary). Note further that the PhP 5,000,000 contract does
 not include the costs of the SIM cards.
 
-### Algo and code shiz
+### Objectives
 
-Blah blah blah 
+To determine the depth and condition of the target market and its ability to support the door-to-door caravan proposal by the marketing agency.
 
+To determine the validity of the technical assumptions and design of the door-to-door caravan project. 
+
+To determine whether the door-to-door caravan project is financially possible and attractive for the business. 
+
+### **METHODOLOGY**
 #### Loading and preprocessing the data  
 Additional R packages are required to properly process the data. These packages contain functions that aren't included in the standard R set of packages.
 
@@ -69,7 +74,7 @@ chooseCRANmirror(graphics=FALSE, ind=1)
 install.packages("geosphere")
 install.packages("dplyr")
 install.packages("ggplot2")
-
+install.packages("readxl")
 ```
 
 #### Load the Required Libraries  
@@ -79,7 +84,7 @@ It is necessary to load the previously installed R packages. Once called, the fu
 library(dplyr)
 library(geosphere)
 library(ggplot2)
-
+library(readxl)
 ```
 
 #### Set Working Directory
@@ -111,28 +116,36 @@ dataset = read.csv("h2h.csv",skip=1)
 
 
 
-### Processing / Transforming the data  
+### **PROCESSING / TRANSFORMING THE DATA** 
 
-blah blah blah 
+The dataset is composed of 42,036 observations and 13 variables. It still needs some filtering and subsetting techniques taking into consideration the different assumptions held. The NCR Data subset will be used instead of the original dataset. New variables will also be introduced in accordance to the different assumptions on this project. Lastly, the maximum number of households reached by the samplers will be matched with the barangays that exceed that maximum number. 
 
 #### Setting the dataset's column headers
+  
+Set the first column of the dataset as column names. If not, this will be read as an observation. 
+
 
 ```{r }
 colnames(dataset) = c("Island","Major_Island","Region","Province","ProvinceCity","CityMunicipcality","Barangay","TotalPopulation","NHouseholds","AreaBarangay","lat","long","Size")
 ```
 
-#### Subset and get only the NCR Data
+#### Subset and get only the NCR Data  
+
+The dataset contains all barangays in the Philippines. Given the restriction that the samplers will be coming to and from The Globe Telecom Plaza in Taguig City, it is realistic to only consider barangays in the National Capital Region. 
+
 
 ```{r }
 NCRDataset = subset(dataset,dataset$Region=="NATIONAL CAPITAL REGION") 
 ```
 
-#### Concatenate City and Brgy into one column
+#### Concatenate City and Brgy into one column  
+Merging City and Brgy observations:
 ```{r }
 NCRDataset$CityBrgy<-paste(NCRDataset$CityMunicipcality,NCRDataset$Barangay,sep="-")
 ```
 
-#### Assignment of parameters with variables based on given figures by the marketing agency
+#### Assignment of parameters with variables based on given figures by the marketing agency  
+The following are the parameters given by the marketing agency:
 
 ```{r }
 ans <- 0.9			#Answer rate
@@ -149,15 +162,20 @@ initialCost <- 5000000 	#Initial investment
 #### Assignment of parameters with variables based on assumptions  
 
 ```{r }
-projYears <- 5			#Length of financial projection
+projYears <- 5		#Length of financial projection
 speedVan <- 33	#Average speed of cars in Metro Manila
 spielTotal <- 60        #Average length of time spent per household (if they answer)
 spielTotal2 <- 40      #Average length of time spent per household (if no answer)
+tgtLongLatPoints<- c(121.0499 , 14.5545)	#Coordinates of TGT
+talkTotal <- 50 		#Average length of interaction time per household
+wage <- 537		#Salary of samplers
 
 ```
 
 #### Calculate the remaining work hours after/before travel  
-
+Given the restriction that the samplers' work hours will start and end at The Globe Telecom Plaza in Taguig City, it is fair to consider the time consumed in transit.   
+  
+  
 Initialize column to contain distance
 ```{r }
 NCRDataset$distanceFromTGT = 0
@@ -179,6 +197,9 @@ NCRDataset$availableWorkhoursAfterVanTravel = 8 - (NCRDataset$travelTime * 2)
 ```
 
 #### Compute for the maximum possible households that the samplers can reach per barangay  
+  
+To remove idle time, it is necessary to know the maximum households the samplers can reach per day.  Subsequently, they should be deployed in the barangays that exceed that number of households.  
+
 
 Mutate a column for the maximum possible households  
 ```{r }
@@ -193,17 +214,18 @@ NCRDataset<-subset(NCRDataset,NCRDataset$NHouseholds>=NCRDataset$maxpossible)
 
 
 
-### Data Analysis - Market Feasibility  
+### **DATA ANALYSIS - MARKET FEASIBILITY** 
+  
+This section aims to assess the feasibility of the market for the door-to-door caravan project. The goal is to maximize the total number of hits given the resource constraints of the marketing agency. At the end of this section, the final target market in terms of barangay locations will be identified.
 
-blah blah
 
-### Get the top 100 barangays to be visited to maximize the total hits by arranging the barangays with respect to the maximum number of households
+#### Get the top 100 barangays to be visited to maximize the total hits by arranging the barangays with respect to the maximum number of households
  
 ```{r }
 chosenBrgy<-head(arrange(NCRDataset,desc(NCRDataset$maxpossible)),day)
 ```
 
-### Given the top 100 barangays, compute for the number of hits that can be realistically obtained for 100 days of sampling 
+#### Given the top 100 barangays, compute for the number of hits that can be realistically obtained for 100 days of sampling 
 
 Calculate the total number of hits  
 ```{r }
@@ -254,24 +276,25 @@ knitr::include_graphics("images/lineGraphNumberOfHitsPerSamplers.png")
 By changing the subset condition and limiting the Major_Island parameter into "GMA" instead of limiting the Region parameter to "NCR", we can identify other potential barangays in the Greater Manila Area to visit.
 
 ```{r}
-
 GMADataset<-subset(dataset,dataset$Major_Island=="GMA")
 
 GMADataset$distanceFromTGT = 0
+
 for(i in 1:nrow(GMADataset)){
-      GMADataset[i,14] = distm(c(GMADataset[i, 12], GMADataset[i,11]), c(121.0499,  14.5535), fun = distHaversine) / 1000
+      GMADataset[i,14] = distm(c(GMADataset[i, 12], GMADataset[i,11]), tgtLongLatPoints, fun = distHaversine) / 1000
 }
-GMADataset$travelTime = ((GMADataset$distanceFromTGT/33))
+GMADataset$travelTime = ((GMADataset$distanceFromTGT/speedVan))
 GMADataset$availableWorkhoursAfterVanTravel = 8 - (GMADataset$travelTime * 2)
 GMADataset$CityBrgy<-paste(GMADataset$CityMunicipcality,GMADataset$Barangay,sep="-")
-GMADataset$maxpossible<-(10*(GMADataset$availableWorkhoursAfterVanTravel*3600))/((60*0.9)+(40*0.1))
+GMADataset$maxpossible<-(10*(GMADataset$availableWorkhoursAfterVanTravel*3600))/((spielTotal*ans)+(spielTotal2*(1-ans)))
 GMADataset<-subset(GMADataset,GMADataset$NHouseholds>=GMADataset$maxpossible)
-chosenBrgyProv<-head(arrange(GMADataset,desc(GMADataset$maxpossible)),100)
-chosenBrgyProv$hits<-0.9*chosenBrgyProv$maxpossible*0.75
+chosenBrgyProv<-head(arrange(GMADataset,desc(GMADataset$maxpossible)),day)
+chosenBrgyProv$hits<-ans*chosenBrgyProv$maxpossible*acc
 HitsbyCityProv <- chosenBrgyProv %>% group_by(ProvinceCity) %>% summarise(TotalHits = sum(hits))
 HitsbyRegionProv <- chosenBrgyProv %>% group_by(Region) %>% summarise(TotalHits = sum(hits))
 HitsbyBarangayProv <- chosenBrgyProv %>% group_by(Size) %>% summarise(TotalHits = sum(hits))
 TotalHitsProv<-sum(chosenBrgyProv$hits)
+
 ```
 
 
@@ -292,7 +315,10 @@ Create a mapping plot for the comparison of hits between Rizal and Metro Manila
 knitr::include_graphics("images/comparisonOfHitsBetweenRizalAndMetroManila.png")
 ``` 
 
-### Data Analysis - Technical Feasibility
+### **DATA ANALYSIS - TECHNICAL FEASIBILITY**
+  
+Technical Feasibility is the is the complete study of the project in terms of input, process, output, fields, programs and procedures. Specifically, this section analyzes the utilization of the samplers. It is a great tool for long term planning for efficient project execution.  This will essentially support the financial information of an organization.  
+
 
 #### Get the utilization of samplers
 
@@ -302,11 +328,12 @@ Transform the data needed for interacting time, walking time and travelling time
 ```{r}
 Case3<-as.data.frame(chosenBrgy$CityBrgy)
 colnames(Case3)<-"CityBrgy"
-Case3$travelTime<-chosenBrgy$travelTime*2*60
+Case3$travelTime<-chosenBrgy$travelTime*2*spielTotal
 Case3$maxpossible<-chosenBrgy$maxpossible
 Case3$hits<-chosenBrgy$hits
-Case3$InteractingTime<-Case3$maxpossible*ans*50/60
-Case3$WalkingTime<-Case3$maxpossible*sampler/60
+Case3$InteractingTime<-Case3$maxpossible*ans*talkTotal/spielTotal
+Case3$WalkingTime<-Case3$maxpossible*sampler/spielTotal
+
 
 ```
 
@@ -325,7 +352,7 @@ comparisonSamplers<-as.data.frame(1:7)
 colnames(comparisonSamplers)<-"NSamplers"
 comparisonSamplers[,1]<-10:16
 comparisonSamplers$Hits<-0
-comparisonSamplers$Wages<-comparisonSamplers$NSamplers*537*day
+comparisonSamplers$Wages<-comparisonSamplers$NSamplers*wage*day
 
 for (i in 10:16){ NCRDataset$maxpossible<-(i*(NCRDataset$availableWorkhoursAfterVanTravel*3600))/((spielTotal*ans)+(spielTotal2*(1-ans)))
       NCRDataset<-subset(NCRDataset,NCRDataset$NHouseholds>=NCRDataset$maxpossible)
@@ -340,8 +367,10 @@ g+geom_col()+ggtitle("Hits With Varying Number of Samplers")
 
 ```
 
-### Data Analysis - Financial Feasibility
-
+### **DATA ANALYSIS - FINANCIAL FEASIBILITY**  
+  
+Every business strategy should be evaluated in terms of its Return of Investment (ROI) and Payback Period. This section provides a projected ROI and Payback Period taking into consideration the costs that will be incurred for the project. Also, the cumulative investment is plotted against the cumulative profit.  
+  
 #### Project the Return on Investment (ROI) and Payback Period for 5 years  
   
   
@@ -378,15 +407,27 @@ Compute for the cumulative profit
 cumulativeNIBT <- totalRevenuePerYear*projYears
 ```
 
-Make a line graph for the cumulative investment and cumulative Profit  
+Make a line graph for the cumulative investment and cumulative Profit   
     
+Put the .xlsx file inside a variable and add another argument for the sheet number
 ```{r}
+	fincum <- read_excel("Cum_Prof_Inv.xlsx", sheet = 2)
+```
+Rename the columns for readability purposes  
+  
+```{r}
+colnames(fincum) <- c("year", "CumInv", "CumProf")
+```
+	
+Code for the line plot
+```{r fig.align="center"}
 ggplot()+
   geom_line(data=fincum,aes(y=CumInv/1000000,x= year,colour="red"),size=1 )+
   geom_line(data=fincum,aes(y=CumProf/1000000,x= year,colour="blue"),size=1) +
-  scale_color_discrete(name = "Legend", labels = c("Cum Inv", "Cum Prof")) + 
+  scale_color_discrete(name = "Legend", labels = c("Cumulative Profit", "Cumulative Investment")) + 
   xlab('Dates') +
-  ylab('Cumulative Change in Millions')
+  ylab('Cumulative Change in Millions') 
+
 ```
   
 Calculate Return on Investment (ROI)
