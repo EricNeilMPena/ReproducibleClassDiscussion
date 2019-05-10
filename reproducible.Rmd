@@ -75,7 +75,7 @@ install.packages("ggplot2")
 #### Load the Required Libraries  
 It is necessary to load the previously installed R packages. Once called, the functions contained in these packages will now be useful.   
 
-```{r }
+```{r  results='hide', message=FALSE, warning=FALSE}
 library(dplyr)
 library(geosphere)
 library(ggplot2)
@@ -207,8 +207,9 @@ chosenBrgy<-head(arrange(NCRDataset,desc(NCRDataset$maxpossible)),day)
 
 Calculate the total number of hits  
 ```{r }
-chosenBrgy$hits<-ans*chosenBrgy$maxpossible*acc
 
+chosenBrgy$hits<-ans*chosenBrgy$maxpossible*acc
+TotalHits <- sum(chosenBrgy$hits)
 ```
 
 Calculate the total number of hits by City
@@ -229,17 +230,24 @@ HitsbyBarangay <- chosenBrgy %>% group_by(Size) %>% summarise(TotalHits = sum(hi
 ```
 
 
-Create a mapping plot for the top 100 barangays to visualize  
-  
-FIGURE HERE
+
+Create a mapping plot for the top 100 barangays to visualize 
+
+```{r, echo=FALSE,fig.align="center", fig.cap="Top 100 barangays", out.width = '40%'}
+knitr::include_graphics("images/mappingPlotTop100brgy.png")
+```
   
 Make a shape plot for the number of barangays per city to visualize  
   
-FIGURE HERE  
+```{r, echo=FALSE,fig.align="center", fig.cap="Number of barangays per city", out.width = '60%'}
+knitr::include_graphics("images/shapePlotNumberOfBarangaysPerCity.png")
+``` 
 
 Create a line graph for the total number of hits per samplers to visualize  
   
-FIGURE HERE
+```{r, echo=FALSE,fig.align="center", fig.cap="Total number of hits per samplers", out.width = '80%'}
+knitr::include_graphics("images/lineGraphNumberOfHitsPerSamplers.png")
+``` 
 
 #### Check if reaching out to nearby provinces would increase the number of hits  
   
@@ -251,7 +259,7 @@ GMADataset<-subset(dataset,dataset$Major_Island=="GMA")
 
 GMADataset$distanceFromTGT = 0
 for(i in 1:nrow(GMADataset)){
-      GMADataset[i,16] = distm(c(GMADataset[i, 12], GMADataset[i,11]), c(121.0499,  14.5535), fun = distHaversine) / 1000
+      GMADataset[i,14] = distm(c(GMADataset[i, 12], GMADataset[i,11]), c(121.0499,  14.5535), fun = distHaversine) / 1000
 }
 GMADataset$travelTime = ((GMADataset$distanceFromTGT/33))
 GMADataset$availableWorkhoursAfterVanTravel = 8 - (GMADataset$travelTime * 2)
@@ -266,24 +274,23 @@ HitsbyBarangayProv <- chosenBrgyProv %>% group_by(Size) %>% summarise(TotalHits 
 TotalHitsProv<-sum(chosenBrgyProv$hits)
 ```
 
+
 The percent difference in the total hits is calculated for between the Greater Manila Area and only the National Capital Region
 
-```{r eval = FALSE}
+```{r}
 Difference<-100*(TotalHitsProv-TotalHits)/TotalHitsProv
 ```
 
-Create a mapping plot of the top 100 barangays with the provinces to visualize
+Create a mapping plot of the top 100 barangays including those in the provinces to visualize
 
-
-FIGURE HERE  
-
+```{r, echo=FALSE,fig.align="center", fig.cap="Top 100 barangays with the provinces", out.width = '60%'}
+knitr::include_graphics("images/shapePlotTop100barangayswiththeprovinces.png")
+``` 
 Create a mapping plot for the comparison of hits between Rizal and Metro Manila
 
-FIGURE HERE  
-
-Create a mapping plot for the comparison of hits between Rizal and Metro Manila  
-  
-FIGURE HERE
+```{r, echo=FALSE,fig.align="center", fig.cap="Mapping plot for the comparison of hits between Rizal and Metro Manila", out.width = '60%'}
+knitr::include_graphics("images/comparisonOfHitsBetweenRizalAndMetroManila.png")
+``` 
 
 ### Data Analysis - Technical Feasibility
 
@@ -292,7 +299,7 @@ FIGURE HERE
 Transform the data needed for interacting time, walking time and travelling time
 
 
-```{r eval = FALSE}
+```{r}
 Case3<-as.data.frame(chosenBrgy$CityBrgy)
 colnames(Case3)<-"CityBrgy"
 Case3$travelTime<-chosenBrgy$travelTime*2*60
@@ -305,13 +312,15 @@ Case3$WalkingTime<-Case3$maxpossible*sampler/60
 
 Create a mapping plot for the Interacting time breakdown of the samplers per hour to visualize  
   
-  
-FIGURE HERE
+```{r, echo=FALSE,fig.align="center", fig.cap="Mapping plot for the Interacting time breakdown of the samplers per hour", out.width = '60%'}
+knitr::include_graphics("images/mappingPlotForTheInteractingTimeBreakdownOfTheSamplersPerHour.png")
+``` 
+
 
 #### Increasing the number of samplers
 
 
-```{r eval = FALSE}
+```{r fig.align = "center"}
 comparisonSamplers<-as.data.frame(1:7)
 colnames(comparisonSamplers)<-"NSamplers"
 comparisonSamplers[,1]<-10:16
@@ -338,51 +347,58 @@ g+geom_col()+ggtitle("Hits With Varying Number of Samplers")
   
 Get the total number of conversions
 
-```{r eval = FALSE}
+```{r}
 chosenBrgy$conversion <- chosenBrgy$hits*conv
 TotalConversion <- sum(chosenBrgy$conversion)
 ```
 
 Compute for the total manufacturing cost of sim cards 
-```{r eval = FALSE}
-totalSimcost <- Hits*sim
+```{r}
+totalSimcost <- TotalHits*sim
 ```
 
 
 Calculate the total revenue per year 
 
-```{r eval = FALSE}
+```{r}
 totalRevenuePerYear <- TotalConversion*rev
 
 ```
 
 Get the total investment based on initial investment and sim card manufacturing cost
 
-```{r eval = FALSE}
+```{r}
 totalInvestment <- initialCost+totalSimcost
 
 ```
 
 Compute for the cumulative profit
 
-```{r eval = FALSE}
+```{r}
 cumulativeNIBT <- totalRevenuePerYear*projYears
 ```
 
 Make a line graph for the cumulative investment and cumulative Profit  
     
-FIGURE HERE  
+```{r}
+ggplot()+
+  geom_line(data=fincum,aes(y=CumInv/1000000,x= year,colour="red"),size=1 )+
+  geom_line(data=fincum,aes(y=CumProf/1000000,x= year,colour="blue"),size=1) +
+  scale_color_discrete(name = "Legend", labels = c("Cum Inv", "Cum Prof")) + 
+  xlab('Dates') +
+  ylab('Cumulative Change in Millions')
+```
   
 Calculate Return on Investment (ROI)
 
-```{r eval = FALSE}
+```{r}
 ROI <- ((cumulativeNIBT-totalInvestment)/totalInvestment)*100
 ```
 
 Get the Payback Period
 
 
-```{r eval = FALSE}
+```{r}
 PaybackPeriod <- totalInvestment/totalRevenuePerYear
 
 ```
@@ -391,8 +407,42 @@ PaybackPeriod <- totalInvestment/totalRevenuePerYear
 
 Vary the acceptance and conversion rate (by +/- 50%) simultaneously and compute the ROI and Payback Period (The values used in the simulation are summarized below)
 
+```{r}
+varmatrixROI<-matrix(nrow=6,ncol=6)
+varmatrixROI[1,]<-c(0,0,0.125,0.25,0.75,1)
+varmatrixROI[,1]<-c(0,0,0.375,0.75,0.875,1)
+
+varmatrixPB<-matrix(nrow=6,ncol=6)
+varmatrixPB[1,]<-c(0,0,0.125,0.25,0.75,1)
+varmatrixPB[,1]<-c(0,0,0.375,0.75,0.875,1)
+
+convmatrix<-as.data.frame(c(0,0,0.125,0.25,0.75,1))
+accmatrix<-as.data.frame(c(0,0,0.375,0.75,0.875,1))
+i<-2
+j<-2
+for (i in 2:6){
+      for (j in 2:6) {
+            conv<-convmatrix[j,]
+            acc<-accmatrix[i,]
+            chosenBrgy$hits<-ans*chosenBrgy$maxpossible*acc
+            TotalHits<-sum(chosenBrgy$hits)
+            TotalConversion <- TotalHits*conv
+            totalSimcost <- TotalHits*sim
+            totalRevenuePerYear <- TotalConversion*rev
+            totalInvestment <- initialCost+totalSimcost
+            cumulativeNIBT <- totalRevenuePerYear*projYears
+            varmatrixROI[i,j] <- ((cumulativeNIBT-totalInvestment)/totalInvestment)*100
+            varmatrixPB[i,j] <- totalInvestment/totalRevenuePerYear
+      }
+      
+}
+```
 
 
+Plot the calculated ROIs and Payback Periods to visualize the effect of changing the acceptance and conversion rate
 
 
+```{r, echo=FALSE,fig.align="center", fig.cap="Effect of acceptance rate and conversion rate on Return On Investment", out.width = '60%'}
+knitr::include_graphics("images/roi.png")
+``` 
 
